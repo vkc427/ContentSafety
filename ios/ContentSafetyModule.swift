@@ -43,7 +43,8 @@ public class ContentSafetyModule: Module {
 
         AsyncFunction("warmup") { [weak self] () async -> Void in
             guard #available(iOS 17, *) else { return }
-            _ = self?.imageAnalyzer  // triggers lazy init of SCSensitivityAnalyzer
+            guard let self else { return }
+            _ = self.imageAnalyzer
         }
     }
 }
