@@ -1,37 +1,54 @@
-import ExpoContentSafety from 'expo-content-safety-scaffold';
-import { Button, SafeAreaView, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Button, ScrollView, Text as RNText, StyleSheet, View } from 'react-native';
+import { Image, Video, Text } from 'expo-content-safety';
 
 export default function App() {
+  const [output, setOutput] = useState<string>('Tap a button to call the stub.');
+
+  async function runImage() {
+    try {
+      const result = await Image.detect('file:///placeholder.jpg');
+      setOutput(JSON.stringify(result, null, 2));
+    } catch (e: any) {
+      setOutput(`ERROR: ${e.code} ${e.message}`);
+    }
+  }
+
+  async function runVideo() {
+    try {
+      const result = await Video.detect('file:///placeholder.mp4');
+      setOutput(JSON.stringify(result, null, 2));
+    } catch (e: any) {
+      setOutput(`ERROR: ${e.code} ${e.message}`);
+    }
+  }
+
+  async function runText() {
+    try {
+      const result = await Text.detect('hello world');
+      setOutput(JSON.stringify(result, null, 2));
+    } catch (e: any) {
+      setOutput(`ERROR: ${e.code} ${e.message}`);
+    }
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.container}>
-        <Text style={styles.header}>Module API Example</Text>
-        <Group name="Async functions">
-          <Button
-            title="Set value"
-            onPress={async () => {
-              await ExpoContentSafety.setValueAsync('Hello from JS!');
-            }}
-          />
-        </Group>
-      </ScrollView>
-    </SafeAreaView>
+    <ScrollView contentContainerStyle={styles.container}>
+      <RNText style={styles.title}>expo-content-safety smoke test</RNText>
+      <Button title="detect image" onPress={runImage} />
+      <View style={styles.spacer} />
+      <Button title="detect video" onPress={runVideo} />
+      <View style={styles.spacer} />
+      <Button title="detect text" onPress={runText} />
+      <View style={styles.spacer} />
+      <RNText style={styles.output}>{output}</RNText>
+    </ScrollView>
   );
 }
 
-function Group(props: { name: string; children: React.ReactNode }) {
-  return (
-    <View style={styles.group}>
-      <Text style={styles.groupHeader}>{props.name}</Text>
-      {props.children}
-    </View>
-  );
-}
-
-const styles = {
-  header: { fontSize: 30, margin: 20 },
-  groupHeader: { fontSize: 20, marginBottom: 20 },
-  group: { margin: 20, backgroundColor: '#fff', borderRadius: 10, padding: 20 },
-  container: { flex: 1, backgroundColor: '#eee' },
-  view: { flex: 1, height: 200 },
-};
+const styles = StyleSheet.create({
+  container: { padding: 24, paddingTop: 80 },
+  title: { fontSize: 18, fontWeight: '600', marginBottom: 16 },
+  spacer: { height: 12 },
+  output: { marginTop: 24, fontFamily: 'Courier', fontSize: 12 },
+});
