@@ -9,6 +9,7 @@ version = '0.1.0'
 android {
   namespace "expo.modules.contentsafety"
   defaultConfig {
+    minSdkVersion 24
     versionCode 1
     versionName "0.1.0"
   }
