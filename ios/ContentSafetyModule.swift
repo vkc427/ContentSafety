@@ -11,10 +11,10 @@ public class ContentSafetyModule: Module {
             guard #available(iOS 17, *) else {
                 throw ImageAnalyzerError.iosVersionTooLow
             }
-            let threshold = options["threshold"] as? Double ?? 0.7
             guard let self else {
                 throw ImageAnalyzerError.inferenceFailed("Module deallocated")
             }
+            let threshold = options["threshold"] as? Double ?? 0.7
             return try await self.imageAnalyzer.analyze(uri: uri, threshold: threshold)
         }
 
