@@ -1,9 +1,9 @@
 {
-  "platforms": ["apple", "android"],
-  "apple": {
-    "modules": ["ExpoContentSafetyModule"]
+  "platforms": ["ios", "android"],
+  "ios": {
+    "modules": ["ContentSafetyModule"]
   },
   "android": {
-    "modules": ["expo.modules.contentsafety.ExpoContentSafetyModule"]
+    "modules": ["expo.modules.contentsafety.ContentSafetyModule"]
   }
 }
