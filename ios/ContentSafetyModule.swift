@@ -1,45 +1,49 @@
 import ExpoModulesCore
 
 public class ContentSafetyModule: Module {
-  public func definition() -> ModuleDefinition {
-    Name("ContentSafety")
+    @available(iOS 17.0, *)
+    private lazy var imageAnalyzer = ImageAnalyzer()
 
-    AsyncFunction("detectImage") { (uri: String, options: [String: Any]) -> [String: Any] in
-      let threshold = options["threshold"] as? Double ?? 0.7
-      return [
-        "isNSFW": false,
-        "confidence": 0.0,
-        "threshold": threshold,
-        "source": "apple-sca",
-        "durationMs": 0
-      ]
-    }
+    public func definition() -> ModuleDefinition {
+        Name("ContentSafety")
 
-    AsyncFunction("detectVideo") { (uri: String, options: [String: Any]) -> [String: Any] in
-      let threshold = options["threshold"] as? Double ?? 0.7
-      return [
-        "isNSFW": false,
-        "confidence": 0.0,
-        "threshold": threshold,
-        "source": "tflite-image",
-        "durationMs": 0,
-        "framesAnalyzed": 0
-      ]
-    }
+        AsyncFunction("detectImage") { [weak self] (uri: String, options: [String: Any]) async throws -> [String: Any] in
+            guard #available(iOS 17, *) else {
+                throw ImageAnalyzerError.iosVersionTooLow
+            }
+            let threshold = options["threshold"] as? Double ?? 0.7
+            guard let self else {
+                throw ImageAnalyzerError.inferenceFailed("Module deallocated")
+            }
+            return try await self.imageAnalyzer.analyze(uri: uri, threshold: threshold)
+        }
 
-    AsyncFunction("detectText") { (input: String, options: [String: Any]) -> [String: Any] in
-      let threshold = options["threshold"] as? Double ?? 0.7
-      return [
-        "isNSFW": false,
-        "confidence": 0.0,
-        "threshold": threshold,
-        "source": "blocklist",
-        "durationMs": 0
-      ]
-    }
+        AsyncFunction("detectVideo") { (_: String, options: [String: Any]) -> [String: Any] in
+            let threshold = options["threshold"] as? Double ?? 0.7
+            return [
+                "isNSFW": false,
+                "confidence": 0.0,
+                "threshold": threshold,
+                "source": "tflite-image",
+                "durationMs": 0,
+                "framesAnalyzed": 0,
+            ]
+        }
 
-    AsyncFunction("warmup") { () -> Void in
-      // no-op stub; real impl loads models lazily
+        AsyncFunction("detectText") { (_: String, options: [String: Any]) -> [String: Any] in
+            let threshold = options["threshold"] as? Double ?? 0.7
+            return [
+                "isNSFW": false,
+                "confidence": 0.0,
+                "threshold": threshold,
+                "source": "blocklist",
+                "durationMs": 0,
+            ]
+        }
+
+        AsyncFunction("warmup") { [weak self] () async -> Void in
+            guard #available(iOS 17, *) else { return }
+            _ = self?.imageAnalyzer  // triggers lazy init of SCSensitivityAnalyzer
+        }
     }
-  }
 }
