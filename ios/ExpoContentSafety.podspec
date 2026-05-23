@@ -7,6 +7,8 @@ Pod::Spec.new do |s|
   s.homepage       = 'https://docs.expo.dev/modules/'
   s.platforms      = { :ios => '17.0' }
   s.source         = { git: '' }
+  s.license        = { type: 'MIT' }
+  s.swift_version  = '5.9'
   s.static_framework = true
 
   s.dependency 'ExpoModulesCore'
@@ -21,6 +23,7 @@ Pod::Spec.new do |s|
   s.source_files = "*.{h,m,mm,swift,hpp,cpp}"
 
   s.test_spec 'Tests' do |test_spec|
+    test_spec.platforms    = { :ios => '17.0' }
     test_spec.source_files = 'Tests/**/*.swift'
   end
 end
