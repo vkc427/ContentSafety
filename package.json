@@ -44,7 +44,11 @@
     "preset": "jest-expo",
     "roots": [
       "<rootDir>/src"
-    ]
+    ],
+    "moduleNameMapper": {
+      "^\\.\\./ContentSafetyModule$": "<rootDir>/src/__tests__/__mocks__/ContentSafetyModule.ts",
+      "^\\./ContentSafetyModule$": "<rootDir>/src/__tests__/__mocks__/ContentSafetyModule.ts"
+    }
   },
   "peerDependencies": {
     "expo": "*",
