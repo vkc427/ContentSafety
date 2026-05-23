@@ -21,17 +21,26 @@ final class MockImageSensitivityAnalyzing: ImageSensitivityAnalyzing {
 final class ImageAnalyzerTests: XCTestCase {
     private var mock: MockImageSensitivityAnalyzing!
     private var analyzer: ImageAnalyzer!
+    private var tempFileURLs: [URL] = []
 
     override func setUp() {
+        tempFileURLs = []
         super.setUp()
         mock = MockImageSensitivityAnalyzing()
         analyzer = ImageAnalyzer(underlying: mock)
+    }
+
+    override func tearDown() {
+        tempFileURLs.forEach { try? FileManager.default.removeItem(at: $0) }
+        tempFileURLs = []
+        super.tearDown()
     }
 
     // Writes an empty file to tmp and returns its file:// URL string.
     private func makeTempFile(name: String) throws -> String {
         let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent(name)
         try Data().write(to: url)
+        tempFileURLs.append(url)
         return url.absoluteString
     }
 
@@ -43,6 +52,8 @@ final class ImageAnalyzerTests: XCTestCase {
             XCTFail("Expected throw")
         } catch let err as ImageAnalyzerError {
             guard case .invalidInput = err else { return XCTFail("Wrong case: \(err)") }
+        } catch {
+            XCTFail("Expected ImageAnalyzerError, got: \(error)")
         }
     }
 
@@ -52,6 +63,8 @@ final class ImageAnalyzerTests: XCTestCase {
             XCTFail("Expected throw")
         } catch let err as ImageAnalyzerError {
             guard case .invalidInput = err else { return XCTFail("Wrong case: \(err)") }
+        } catch {
+            XCTFail("Expected ImageAnalyzerError, got: \(error)")
         }
     }
 
@@ -61,6 +74,8 @@ final class ImageAnalyzerTests: XCTestCase {
             XCTFail("Expected throw")
         } catch let err as ImageAnalyzerError {
             guard case .invalidInput = err else { return XCTFail("Wrong case: \(err)") }
+        } catch {
+            XCTFail("Expected ImageAnalyzerError, got: \(error)")
         }
     }
 
@@ -121,6 +136,10 @@ final class ImageAnalyzerTests: XCTestCase {
 
         XCTAssertNotNil(mock.capturedURL)
         XCTAssertTrue(mock.capturedURL?.isFileURL == true)
+        XCTAssertEqual(
+            mock.capturedURL?.path(percentEncoded: false),
+            URL(string: uri)?.path(percentEncoded: false)
+        )
     }
 
     // MARK: Error propagation
@@ -134,6 +153,8 @@ final class ImageAnalyzerTests: XCTestCase {
             XCTFail("Expected throw")
         } catch let err as ImageAnalyzerError {
             guard case .inferenceFailed = err else { return XCTFail("Wrong case: \(err)") }
+        } catch {
+            XCTFail("Expected ImageAnalyzerError, got: \(error)")
         }
     }
 
@@ -147,6 +168,8 @@ final class ImageAnalyzerTests: XCTestCase {
             XCTFail("Expected throw")
         } catch let err as ImageAnalyzerError {
             guard case .inferenceFailed = err else { return XCTFail("Wrong case: \(err)") }
+        } catch {
+            XCTFail("Expected ImageAnalyzerError, got: \(error)")
         }
     }
 }
