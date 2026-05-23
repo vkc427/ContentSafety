@@ -29,12 +29,14 @@ enum ImageAnalyzerError: Error, LocalizedError {
     case invalidInput(String)
     case inferenceFailed(String)
     case iosVersionTooLow
+    case modelLoadFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidInput(let msg):   return "INVALID_INPUT: \(msg)"
         case .inferenceFailed(let msg): return "INFERENCE_FAILED: \(msg)"
         case .iosVersionTooLow:        return "IOS_VERSION_TOO_LOW: iOS 17.0+ is required for image analysis"
+        case .modelLoadFailed(let msg): return "MODEL_LOAD_FAILED: \(msg)"
         }
     }
 }
@@ -50,13 +52,13 @@ final class ImageAnalyzer {
     }
 
     func analyze(uri: String, threshold: Double) async throws -> [String: Any] {
-        let start = CFAbsoluteTimeGetCurrent()
+        let start = ProcessInfo.processInfo.systemUptime
 
         guard !uri.isEmpty, let url = URL(string: uri), url.isFileURL else {
             throw ImageAnalyzerError.invalidInput("uri must be a file:// URL, got: \(uri)")
         }
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw ImageAnalyzerError.invalidInput("File not found at: \(url.path)")
+        guard FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) else {
+            throw ImageAnalyzerError.invalidInput("File not found at: \(url.path(percentEncoded: false))")
         }
 
         let sensitive: Bool
@@ -68,7 +70,7 @@ final class ImageAnalyzer {
             throw ImageAnalyzerError.inferenceFailed(error.localizedDescription)
         }
 
-        let durationMs = Int((CFAbsoluteTimeGetCurrent() - start) * 1000)
+        let durationMs = Int((ProcessInfo.processInfo.systemUptime - start) * 1000)
 
         return [
             "isNSFW": sensitive,
