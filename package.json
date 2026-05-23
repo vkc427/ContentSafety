@@ -45,6 +45,10 @@
     "roots": [
       "<rootDir>/src"
     ],
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      "/__mocks__/"
+    ],
     "moduleNameMapper": {
       "^\\.\\./ContentSafetyModule$": "<rootDir>/src/__tests__/__mocks__/ContentSafetyModule.ts",
       "^\\./ContentSafetyModule$": "<rootDir>/src/__tests__/__mocks__/ContentSafetyModule.ts"
