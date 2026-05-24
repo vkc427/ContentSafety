@@ -7,7 +7,7 @@ public class ContentSafetyModule: Module {
     @available(iOS 17.0, *)
     private lazy var videoAnalyzer = VideoAnalyzer()
 
-    private lazy var textAnalyzer = TextAnalyzer()
+    private var textAnalyzer = TextAnalyzer()
 
     public func definition() -> ModuleDefinition {
         Name("ContentSafety")
@@ -60,8 +60,18 @@ public class ContentSafetyModule: Module {
             )
         }
 
-        AsyncFunction("warmup") { [weak self] () async -> Void in
+        AsyncFunction("warmup") { [weak self] (options: [String: Any]?) async -> Void in
             guard let self else { return }
+            if let modelPath = options?["modelPath"] as? String {
+                let url: URL
+                if modelPath.hasPrefix("file://") {
+                    url = URL(string: modelPath) ?? URL(fileURLWithPath: modelPath)
+                } else {
+                    url = URL(fileURLWithPath: modelPath)
+                }
+                let backend = CoreMLTextModelAnalyzing.load(from: url)
+                self.textAnalyzer = TextAnalyzer(modelBackend: backend)
+            }
             _ = self.textAnalyzer
             guard #available(iOS 17, *) else { return }
             _ = self.imageAnalyzer

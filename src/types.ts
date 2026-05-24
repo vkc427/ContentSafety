@@ -60,3 +60,7 @@ export class ContentSafetyError extends Error {
 export const DEFAULT_THRESHOLD = 0.7;
 export const DEFAULT_VIDEO_SAMPLE_RATE = 1;
 export const DEFAULT_VIDEO_MAX_FRAMES = 30;
+
+export interface WarmupOptions {
+  modelPath?: string;
+}
