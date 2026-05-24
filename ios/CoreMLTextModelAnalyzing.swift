@@ -16,13 +16,13 @@ final class CoreMLTextModelAnalyzing: TextModelAnalyzing {
         return CoreMLTextModelAnalyzing(model: nlModel)
     }
 
-    static var `default`: TextModelAnalyzing {
+    static let `default`: TextModelAnalyzing = {
         guard let url = Bundle(for: CoreMLTextModelAnalyzing.self)
             .url(forResource: "ContentSafetyTextClassifier", withExtension: "mlmodelc") else {
             return NoOpTextModelAnalyzing()
         }
         return load(from: url)
-    }
+    }()
 
     func confidence(for text: String) -> Double {
         model.predictedLabelHypotheses(for: text, maximumCount: 2)["unsafe"] ?? 0.0

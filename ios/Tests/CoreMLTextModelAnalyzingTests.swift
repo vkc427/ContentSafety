@@ -1,5 +1,4 @@
 import XCTest
-import CoreML
 
 final class CoreMLTextModelAnalyzingTests: XCTestCase {
 
