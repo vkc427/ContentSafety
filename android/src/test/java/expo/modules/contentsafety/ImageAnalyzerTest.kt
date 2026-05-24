@@ -1,55 +1,63 @@
 package expo.modules.contentsafety
 
 import android.content.Context
+import android.graphics.Bitmap
 import org.junit.Assert.*
 import org.junit.Before
-import org.junit.After
 import org.junit.Test
 import org.mockito.Mockito.*
-import java.io.File
 import java.nio.ByteBuffer
 
+/**
+ * JVM unit tests for ImageAnalyzer.
+ *
+ * BitmapFactory is an Android framework class that returns null on JVM, so we inject
+ * a bitmapLoader lambda into ImageAnalyzer. The Bitmap class is final and is mocked
+ * using mockito-inline (which supports mocking final classes).
+ */
 class ImageAnalyzerTest {
 
     private lateinit var mockContext: Context
     private lateinit var mockBackend: ImageInferenceBackend
-    private lateinit var tempFile: File
-
-    // A minimal valid 1x1 RGB PNG
-    private val MINIMAL_PNG: ByteArray = byteArrayOf(
-        0x89.toByte(), 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-        0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-        0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-        0x08, 0x02, 0x00, 0x00, 0x00, 0x90.toByte(), 0x77, 0x53, 0xDE.toByte(),
-        0x00, 0x00, 0x00, 0x0C, 0x49, 0x44, 0x41, 0x54,
-        0x08, 0xD7.toByte(), 0x63, 0xF8.toByte(), 0xCF.toByte(), 0xC0.toByte(), 0x00, 0x00, 0x00,
-        0x05, 0x00, 0x01, 0xA2.toByte(), 0x6A, 0xE3.toByte(), 0x8D.toByte(),
-        0x00, 0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44,
-        0xAE.toByte(), 0x42, 0x60, 0x82.toByte()
-    )
+    private lateinit var mockBitmap: Bitmap
 
     @Before
     fun setUp() {
         mockContext = mock(Context::class.java)
         mockBackend = mock(ImageInferenceBackend::class.java)
-        tempFile = File.createTempFile("test_img_", ".png")
-        tempFile.writeBytes(MINIMAL_PNG)
+        mockBitmap = mock(Bitmap::class.java)
+
+        // bitmapToByteBuffer calls bitmap.getPixels — stub it to be a no-op
+        // (it writes to a provided IntArray, nothing to return)
+        doNothing().`when`(mockBitmap).getPixels(any(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt(), anyInt())
+
+        // Bitmap.createScaledBitmap is a static call; stub getWidth/getHeight so it
+        // does not NPE. Alternatively we stub it via the loader to skip scaling by
+        // returning a 224x224 bitmap so createScaledBitmap still works (it delegates
+        // to native). Since we can't easily mock static on older Mockito, we set up
+        // the mock bitmap to report correct dimensions.
+        `when`(mockBitmap.width).thenReturn(224)
+        `when`(mockBitmap.height).thenReturn(224)
+        // recycle() is a no-op on a mock
     }
 
-    @After
-    fun tearDown() {
-        tempFile.delete()
-    }
+    /** Analyzer backed by mockBackend, bitmap decoded via mockBitmap. */
+    private fun makeAnalyzer(): ImageAnalyzer =
+        ImageAnalyzer(
+            context = mockContext,
+            backendFactory = { mockBackend },
+            bitmapLoader = { mockBitmap }
+        )
 
-    private fun makeAnalyzer() = ImageAnalyzer(mockContext) { mockBackend }
-    private fun sfwUri() = "file://${tempFile.absolutePath}"
+    /** A plausible file:// URI — the loader is mocked so the file need not exist. */
+    private val fakeFileUri = "file:///tmp/fake_test_image.jpg"
 
     // -------------------------------------------------------------------------
     // 1. Empty URI -> INVALID_INPUT
     // -------------------------------------------------------------------------
     @Test
     fun `empty URI throws INVALID_INPUT`() {
-        // Even with an empty URI the factory is still invoked by loadModel()
+        // loadModel() is called first, then the URI check — the factory still fires.
         val analyzer = makeAnalyzer()
         val ex = assertThrows(IllegalArgumentException::class.java) {
             analyzer.analyze("", 0.7)
@@ -88,7 +96,7 @@ class ImageAnalyzerTest {
         )
 
         val analyzer = makeAnalyzer()
-        val result = analyzer.analyze(sfwUri(), 0.7)
+        val result = analyzer.analyze(fakeFileUri, 0.7)
 
         assertEquals(false, result["isNSFW"])
         assertEquals(0.05, result["confidence"] as Double, 1e-6)
@@ -96,12 +104,12 @@ class ImageAnalyzerTest {
 
         @Suppress("UNCHECKED_CAST")
         val categories = result["categories"] as Map<String, Double>
-        assertTrue("categories should have 5 keys", categories.size == 5)
-        assertTrue("categories should contain 'drawings'", categories.containsKey("drawings"))
-        assertTrue("categories should contain 'hentai'", categories.containsKey("hentai"))
-        assertTrue("categories should contain 'neutral'", categories.containsKey("neutral"))
-        assertTrue("categories should contain 'porn'", categories.containsKey("porn"))
-        assertTrue("categories should contain 'sexy'", categories.containsKey("sexy"))
+        assertEquals("categories should have 5 keys", 5, categories.size)
+        assertTrue(categories.containsKey("drawings"))
+        assertTrue(categories.containsKey("hentai"))
+        assertTrue(categories.containsKey("neutral"))
+        assertTrue(categories.containsKey("porn"))
+        assertTrue(categories.containsKey("sexy"))
 
         val durationMs = result["durationMs"] as Int
         assertTrue("durationMs should be >= 0", durationMs >= 0)
@@ -120,7 +128,7 @@ class ImageAnalyzerTest {
         )
 
         val analyzer = makeAnalyzer()
-        val result = analyzer.analyze(sfwUri(), 0.7)
+        val result = analyzer.analyze(fakeFileUri, 0.7)
 
         assertEquals(true, result["isNSFW"])
         assertEquals(0.85, result["confidence"] as Double, 1e-6)
@@ -136,10 +144,10 @@ class ImageAnalyzerTest {
         )
 
         val analyzer = makeAnalyzer()
-        val result = analyzer.analyze(sfwUri(), 0.9)
+        val result = analyzer.analyze(fakeFileUri, 0.9)
 
         assertEquals(0.9, result["threshold"] as Double, 1e-9)
-        // With nsfwScore=0.05 and threshold=0.9 => isNSFW=false
+        // nsfwScore=0.05 < threshold=0.9 => isNSFW=false
         assertEquals(false, result["isNSFW"])
     }
 
@@ -157,7 +165,7 @@ class ImageAnalyzerTest {
         }
 
         val analyzer = makeAnalyzer()
-        analyzer.analyze(sfwUri(), 0.7)
+        analyzer.analyze(fakeFileUri, 0.7)
 
         assertEquals("runInference should be called exactly once", 1, capturedBuffers.size)
         assertEquals(
@@ -169,17 +177,20 @@ class ImageAnalyzerTest {
 
     // -------------------------------------------------------------------------
     // 7. Model load failure -> RuntimeException with MODEL_LOAD_FAILED prefix
-    // The factory throws before the backend is created
     // -------------------------------------------------------------------------
     @Test
     fun `backendFactory failure throws MODEL_LOAD_FAILED`() {
         val failingFactory: (Context) -> ImageInferenceBackend = {
             throw RuntimeException("asset not found")
         }
-        val analyzer = ImageAnalyzer(mockContext, failingFactory)
+        val analyzer = ImageAnalyzer(
+            context = mockContext,
+            backendFactory = failingFactory,
+            bitmapLoader = { mockBitmap }
+        )
 
         val ex = assertThrows(RuntimeException::class.java) {
-            analyzer.analyze(sfwUri(), 0.7)
+            analyzer.analyze(fakeFileUri, 0.7)
         }
         assertTrue(
             "Expected MODEL_LOAD_FAILED prefix, got: ${ex.message}",
@@ -196,7 +207,7 @@ class ImageAnalyzerTest {
 
         val analyzer = makeAnalyzer()
         val ex = assertThrows(RuntimeException::class.java) {
-            analyzer.analyze(sfwUri(), 0.7)
+            analyzer.analyze(fakeFileUri, 0.7)
         }
         assertTrue(
             "Expected INFERENCE_FAILED prefix, got: ${ex.message}",

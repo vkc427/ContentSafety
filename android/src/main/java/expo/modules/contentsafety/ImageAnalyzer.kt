@@ -3,7 +3,6 @@ package expo.modules.contentsafety
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.os.SystemClock
 import android.util.Log
 import org.tensorflow.lite.Interpreter
@@ -61,9 +60,32 @@ class TFLiteInferenceBackend(context: Context) : ImageInferenceBackend {
     }
 }
 
+private fun defaultDecodeBitmap(path: String): Bitmap? {
+    return try {
+        val opts = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+            BitmapFactory.decodeFile(path, this)
+        }
+        opts.apply {
+            inSampleSize = 1
+            if (outWidth > 1024 || outHeight > 1024) {
+                val halfW = outWidth / 2; val halfH = outHeight / 2
+                var s = 1
+                while (halfW / s >= 1024 && halfH / s >= 1024) s *= 2
+                inSampleSize = s
+            }
+            inJustDecodeBounds = false
+        }
+        BitmapFactory.decodeFile(path, opts)
+    } catch (e: Exception) {
+        null
+    }
+}
+
 class ImageAnalyzer(
     private val context: Context,
-    private val backendFactory: (Context) -> ImageInferenceBackend = { TFLiteInferenceBackend(it) }
+    private val backendFactory: (Context) -> ImageInferenceBackend = { TFLiteInferenceBackend(it) },
+    private val bitmapLoader: (String) -> Bitmap? = { path -> defaultDecodeBitmap(path) }
 ) {
     @Volatile private var backend: ImageInferenceBackend? = null
 
@@ -85,13 +107,13 @@ class ImageAnalyzer(
         val b = loadModel()
 
         if (uri.isEmpty()) throw IllegalArgumentException("INVALID_INPUT: uri must be a non-empty string")
-        val parsed = try { Uri.parse(uri) } catch (e: Exception) {
+        val parsed = try { java.net.URI(uri) } catch (e: Exception) {
             throw IllegalArgumentException("INVALID_INPUT: malformed uri: $uri")
         }
         if (parsed.scheme != "file") throw IllegalArgumentException("INVALID_INPUT: uri must be a file:// URL, got: $uri")
 
         val path = parsed.path ?: throw IllegalArgumentException("INVALID_INPUT: uri has no path: $uri")
-        val bitmap = decodeBitmap(path)
+        val bitmap = bitmapLoader(path)
             ?: throw IllegalArgumentException("INVALID_INPUT: file not found or unreadable: $path")
 
         return try {
@@ -105,38 +127,12 @@ class ImageAnalyzer(
         }
     }
 
-    private fun decodeBitmap(path: String): Bitmap? {
-        return try {
-            val opts = BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-                BitmapFactory.decodeFile(path, this)
-                inSampleSize = calculateInSampleSize(outWidth, outHeight, 1024, 1024)
-                inJustDecodeBounds = false
-            }
-            BitmapFactory.decodeFile(path, opts)
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    private fun calculateInSampleSize(width: Int, height: Int, maxWidth: Int, maxHeight: Int): Int {
-        var inSampleSize = 1
-        if (width > maxWidth || height > maxHeight) {
-            val halfWidth = width / 2
-            val halfHeight = height / 2
-            while (halfWidth / inSampleSize >= maxWidth && halfHeight / inSampleSize >= maxHeight) {
-                inSampleSize *= 2
-            }
-        }
-        return inSampleSize
-    }
-
     private fun runAnalysis(bitmap: Bitmap, threshold: Double, b: ImageInferenceBackend): Map<String, Any> {
-        val scaled = Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, true)
+        val scaled = Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, true) ?: bitmap
         val input = try {
             bitmapToByteBuffer(scaled)
         } finally {
-            if (scaled != bitmap) scaled.recycle()
+            if (scaled !== bitmap) scaled.recycle()
         }
 
         val start = SystemClock.elapsedRealtime()
