@@ -2,6 +2,9 @@ package expo.modules.contentsafety
 
 import android.content.Context
 import android.os.SystemClock
+import android.util.Log
+
+private const val TAG = "TextAnalyzer"
 
 interface TextModelBackend {
     fun confidence(text: String): Double
@@ -64,8 +67,12 @@ class TextAnalyzer(
                 .replace('$', 's')
         }
 
-        fun termToRegex(term: String): Regex =
-            Regex("\\b${Regex.escape(term.lowercase())}\\b", RegexOption.IGNORE_CASE)
+        fun termToRegex(term: String): Regex {
+            val pattern = term.lowercase()
+                .split(Regex("\\s+"))
+                .joinToString("\\s+") { Regex.escape(it) }
+            return Regex("\\b$pattern\\b", RegexOption.IGNORE_CASE)
+        }
 
         fun loadBlocklist(context: Context): List<Regex> {
             return try {
@@ -77,6 +84,7 @@ class TextAnalyzer(
                     .map { termToRegex(it) }
                     .toList()
             } catch (e: Exception) {
+                Log.w(TAG, "Failed to load blocklist.txt: ${e.message}")
                 emptyList()
             }
         }
