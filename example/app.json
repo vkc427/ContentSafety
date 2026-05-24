@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "expo-content-safety-example",
+    "slug": "expo-content-safety-example",
+    "version": "1.0.0",
+    "platforms": ["ios", "android"],
+    "ios": {
+      "bundleIdentifier": "com.kvadlamudi.expocontentsafetyexample",
+      "deploymentTarget": "17.0"
+    }
+  }
+}
