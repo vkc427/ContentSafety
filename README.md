@@ -4,11 +4,11 @@ On-device NSFW detection for **images**, **videos**, and **text** in React Nativ
 
 ## Status
 
-| Capability | iOS                      | Android               |
-|------------|--------------------------|-----------------------|
-| Image      | ✅ SCSensitivityAnalyzer | stub (TFLite planned) |
-| Video      | stub                     | stub                  |
-| Text       | stub                     | stub                  |
+| Capability | iOS                      | Android                    |
+|------------|--------------------------|----------------------------|
+| Image      | ✅ SCSensitivityAnalyzer | ✅ TFLite MobileNetV2      |
+| Video      | stub                     | stub                       |
+| Text       | stub                     | stub                       |
 
 ## Requirements
 
@@ -82,6 +82,20 @@ try {
 | `UNSUPPORTED_PLATFORM` | No native implementation available on the current platform |
 
 Input validation errors (empty URI, bad threshold) are thrown before the native call and are also `ContentSafetyError` instances with `code: 'INVALID_INPUT'`.
+
+## Android bundle size
+
+The Android TFLite model adds ~17 MB to the APK/AAB. The model is memory-mapped at runtime (not extracted to disk) via `aaptOptions { noCompress 'tflite' }`.
+
+## Model attribution
+
+**Android image detection:** [GantMan/nsfw_model](https://github.com/GantMan/nsfw_model) — MobileNetV2 trained on NSFW imagery. MIT licensed. Classes: `drawings`, `hentai`, `neutral`, `porn`, `sexy`. `isNSFW` is `true` when `max(porn, hentai, sexy) ≥ threshold`.
+
+**iOS image detection:** Apple [SCSensitivityAnalyzer](https://developer.apple.com/documentation/sensitivecontentanalysis) — on-device, no model attribution required.
+
+## Accuracy disclaimer
+
+These models are not perfect. False positives and false negatives will occur. For high-stakes moderation, combine with human review.
 
 ## Privacy
 
