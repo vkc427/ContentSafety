@@ -2,13 +2,12 @@ import XCTest
 
 // MARK: - Mock
 
+@available(iOS 17.0, *)
 final class MockVideoAnalyzing: VideoSensitivityAnalyzing {
     var stubbedSensitive: Bool = false
     var stubbedError: Error? = nil
-    var callCount: Int = 0
 
     func isSensitive(url: URL) async throws -> Bool {
-        callCount += 1
         if let err = stubbedError { throw err }
         return stubbedSensitive
     }
@@ -35,7 +34,7 @@ final class VideoAnalyzerTests: XCTestCase {
     }
 
     override func tearDown() {
-        try? FileManager.default.removeItem(at: tempURL)
+        XCTAssertNoThrow(try FileManager.default.removeItem(at: tempURL))
         super.tearDown()
     }
 
