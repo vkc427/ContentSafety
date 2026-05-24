@@ -54,6 +54,7 @@ class ContentSafetyModule : Module() {
 
         AsyncFunction("warmup") {
             getOrCreateAnalyzer().loadModel()
+            getOrCreateVideoAnalyzer()
             getOrCreateTextAnalyzer()
         }
 

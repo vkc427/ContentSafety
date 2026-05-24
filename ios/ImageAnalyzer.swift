@@ -35,7 +35,7 @@ enum ImageAnalyzerError: Error, LocalizedError {
         switch self {
         case .invalidInput(let msg):   return "INVALID_INPUT: \(msg)"
         case .inferenceFailed(let msg): return "INFERENCE_FAILED: \(msg)"
-        case .iosVersionTooLow:        return "IOS_VERSION_TOO_LOW: iOS 17.0+ is required for image analysis"
+        case .iosVersionTooLow:        return "IOS_VERSION_TOO_LOW: iOS 17.0+ is required"
         case .modelLoadFailed(let msg): return "MODEL_LOAD_FAILED: \(msg)"
         }
     }
