@@ -22,6 +22,8 @@ Pod::Spec.new do |s|
   # Root-level ios/ files only — Tests/ is picked up by test_spec below
   s.source_files = "*.{h,m,mm,swift,hpp,cpp}"
 
+  s.resources = "Assets/**"
+
   s.test_spec 'Tests' do |test_spec|
     test_spec.platforms    = { :ios => '17.0' }
     test_spec.source_files = 'Tests/**/*.swift'
