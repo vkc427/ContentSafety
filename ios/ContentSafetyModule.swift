@@ -4,6 +4,8 @@ public class ContentSafetyModule: Module {
     @available(iOS 17.0, *)
     private lazy var imageAnalyzer = ImageAnalyzer()
 
+    private lazy var textAnalyzer = TextAnalyzer()
+
     public func definition() -> ModuleDefinition {
         Name("ContentSafety")
 
@@ -30,15 +32,21 @@ public class ContentSafetyModule: Module {
             ]
         }
 
-        AsyncFunction("detectText") { (_: String, options: [String: Any]) -> [String: Any] in
+        AsyncFunction("detectText") { [weak self] (input: String, options: [String: Any]) async throws -> [String: Any] in
             let threshold = options["threshold"] as? Double ?? 0.7
-            return [
-                "isNSFW": false,
-                "confidence": 0.0,
-                "threshold": threshold,
-                "source": "blocklist",
-                "durationMs": 0,
-            ]
+            let extraTerms = options["blocklist"] as? [String] ?? []
+            let useBlocklist = options["useBlocklist"] as? Bool ?? true
+            let useModel = options["useModel"] as? Bool ?? true
+            guard let self else {
+                throw TextAnalyzerError.inferenceFailed("Module deallocated")
+            }
+            return try self.textAnalyzer.analyze(
+                input: input,
+                threshold: threshold,
+                useBlocklist: useBlocklist,
+                useModel: useModel,
+                extraTerms: extraTerms
+            )
         }
 
         AsyncFunction("warmup") { [weak self] () async -> Void in
