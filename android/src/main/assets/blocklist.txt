@@ -1,0 +1,37 @@
+# expo-content-safety blocklist
+# One term per line. Lines starting with # are comments.
+# Leetspeak normalization is applied before matching (0→o, 1→i, 3→e, 4→a, 5→s, @→a, $→s).
+# Terms are matched as whole words (word-boundary anchored, case-insensitive).
+porn
+pornography
+pornographic
+nude
+nudity
+naked
+nsfw
+xxx
+hentai
+explicit
+genitals
+penis
+vagina
+vulva
+anus
+anal
+masturbate
+masturbation
+ejaculate
+ejaculation
+orgasm
+erotic
+erotica
+fetish
+beastiality
+bestiality
+incest
+rape
+sexual assault
+child porn
+cp
+loli
+shota
