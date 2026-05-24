@@ -31,14 +31,14 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/kvadlamudi/expo-content-safety.git"
+    "url": "https://github.com/vkc427/ContentSafety.git"
   },
   "bugs": {
-    "url": "https://github.com/kvadlamudi/expo-content-safety/issues"
+    "url": "https://github.com/vkc427/ContentSafety/issues"
   },
   "author": "kvadlamudi <iosvkctps@gmail.com>",
   "license": "MIT",
-  "homepage": "https://github.com/kvadlamudi/expo-content-safety#readme",
+  "homepage": "https://github.com/vkc427/ContentSafety#readme",
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@types/jest": "^29.2.1",
