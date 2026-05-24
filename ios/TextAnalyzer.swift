@@ -32,7 +32,7 @@ final class TextAnalyzer {
     private let modelBackend: TextModelAnalyzing
 
     init(blocklistURL: URL? = TextAnalyzer.defaultBlocklistURL(),
-         modelBackend: TextModelAnalyzing = NoOpTextModelAnalyzing()) {
+         modelBackend: TextModelAnalyzing = CoreMLTextModelAnalyzing.default) {
         self.modelBackend = modelBackend
         self.blocklistPatterns = TextAnalyzer.loadBlocklist(from: blocklistURL)
     }

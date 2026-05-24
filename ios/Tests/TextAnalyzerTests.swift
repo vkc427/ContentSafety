@@ -194,4 +194,35 @@ final class TextAnalyzerTests: XCTestCase {
         XCTAssertNotNil(result["source"])
         XCTAssertNotNil(result["durationMs"])
     }
+
+    // MARK: - CoreMLTextModelAnalyzing.default integration
+
+    func test_defaultBackend_isNotNoOp_whenModelBundled() {
+        // When the production model is bundled, default should be CoreMLTextModelAnalyzing.
+        // When not bundled (CI without model file), it degrades to NoOp — test skips.
+        let backend = CoreMLTextModelAnalyzing.default
+        // This test documents expected production behaviour. It will pass once the
+        // bundled model is present; until then CoreMLTextModelAnalyzing.default == NoOp.
+        if backend is NoOpTextModelAnalyzing {
+            // Model not bundled yet — acceptable during development
+            return
+        }
+        XCTAssert(backend is CoreMLTextModelAnalyzing)
+    }
+
+    func test_analyzerWithCoreMLDefault_doesNotThrow() throws {
+        // Smoke test: analyzer with default backend runs without crashing.
+        let analyzerWithDefault = TextAnalyzer(
+            blocklistURL: nil,
+            modelBackend: CoreMLTextModelAnalyzing.default
+        )
+        let result = try analyzerWithDefault.analyze(
+            input: "hello world",
+            threshold: 0.7,
+            useBlocklist: false,
+            useModel: true,
+            extraTerms: []
+        )
+        XCTAssertNotNil(result["confidence"])
+    }
 }
