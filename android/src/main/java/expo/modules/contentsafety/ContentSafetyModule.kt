@@ -1,48 +1,52 @@
 package expo.modules.contentsafety
 
+import android.content.Context
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 
 class ContentSafetyModule : Module() {
-  override fun definition() = ModuleDefinition {
-    Name("ContentSafety")
+    private val context: Context
+        get() = appContext.reactContext ?: throw IllegalStateException("React context unavailable")
 
-    AsyncFunction("detectImage") { uri: String, options: Map<String, Any?> ->
-      val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
-      mapOf(
-        "isNSFW" to false,
-        "confidence" to 0.0,
-        "threshold" to threshold,
-        "source" to "tflite-image",
-        "durationMs" to 0,
-      )
-    }
+    private val imageAnalyzer: ImageAnalyzer by lazy { ImageAnalyzer(context) }
 
-    AsyncFunction("detectVideo") { uri: String, options: Map<String, Any?> ->
-      val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
-      mapOf(
-        "isNSFW" to false,
-        "confidence" to 0.0,
-        "threshold" to threshold,
-        "source" to "tflite-image",
-        "durationMs" to 0,
-        "framesAnalyzed" to 0,
-      )
-    }
+    override fun definition() = ModuleDefinition {
+        Name("ContentSafety")
 
-    AsyncFunction("detectText") { input: String, options: Map<String, Any?> ->
-      val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
-      mapOf(
-        "isNSFW" to false,
-        "confidence" to 0.0,
-        "threshold" to threshold,
-        "source" to "blocklist",
-        "durationMs" to 0,
-      )
-    }
+        AsyncFunction("detectImage") { uri: String, options: Map<String, Any?> ->
+            val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
+            imageAnalyzer.analyze(uri, threshold)
+        }
 
-    AsyncFunction("warmup") {
-      // no-op stub
+        AsyncFunction("detectVideo") { uri: String, options: Map<String, Any?> ->
+            val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
+            mapOf(
+                "isNSFW" to false,
+                "confidence" to 0.0,
+                "threshold" to threshold,
+                "source" to "tflite-image",
+                "durationMs" to 0,
+                "framesAnalyzed" to 0,
+            )
+        }
+
+        AsyncFunction("detectText") { input: String, options: Map<String, Any?> ->
+            val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
+            mapOf(
+                "isNSFW" to false,
+                "confidence" to 0.0,
+                "threshold" to threshold,
+                "source" to "blocklist",
+                "durationMs" to 0,
+            )
+        }
+
+        AsyncFunction("warmup") {
+            imageAnalyzer.loadModel()
+        }
+
+        OnDestroy {
+            imageAnalyzer.close()
+        }
     }
-  }
 }
