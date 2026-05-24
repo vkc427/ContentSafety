@@ -25,5 +25,6 @@ Pod::Spec.new do |s|
   s.test_spec 'Tests' do |test_spec|
     test_spec.platforms    = { :ios => '17.0' }
     test_spec.source_files = 'ios/Tests/**/*.swift'
+    test_spec.resources    = 'ios/Tests/Resources/**'
   end
 end
