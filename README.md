@@ -8,7 +8,7 @@ On-device NSFW detection for **images**, **videos**, and **text** in React Nativ
 |------------|--------------------------|----------------------------|
 | Image      | ✅ SCSensitivityAnalyzer | ✅ TFLite MobileNetV2      |
 | Video      | stub                     | stub                       |
-| Text       | stub                     | stub                       |
+| Text       | ✅ Blocklist (model stub) | ✅ Blocklist (model stub)  |
 
 ## Requirements
 
@@ -38,6 +38,42 @@ if (imageResult.isNSFW) showWarning(imageResult);
 const videoResult = await Video.detect(videoUri, { sampleRate: 2 });
 const textResult = await Text.detect(message, { blocklist: ['extra-term'] });
 ```
+
+## Text detection
+
+`Text.detect` checks a string against a built-in blocklist of explicit terms and, when a text ML model is bundled, runs it through the model too. The highest score from either source determines `isNSFW`.
+
+```ts
+import { Text } from 'expo-content-safety';
+
+const result = await Text.detect('some user message');
+// result.isNSFW    — true if score ≥ threshold
+// result.confidence — 0–1
+// result.source    — 'blocklist' | 'tflite-text'
+// result.durationMs
+```
+
+### TextDetectOptions
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `threshold` | `number` | `0.7` | Score at or above which `isNSFW` is `true` |
+| `blocklist` | `string[]` | `[]` | Extra terms to add to the built-in seed blocklist |
+| `useBlocklist` | `boolean` | `true` | Whether to run blocklist matching at all |
+| `useModel` | `boolean` | `true` | Whether to run the ML model (no-op until a text model is bundled) |
+
+### Blocklist details
+
+The built-in seed list (~30 terms) covers common explicit vocabulary. Matching is:
+
+- **Case-insensitive** — `PORN` matches `porn`
+- **Word-boundary anchored** — `anal` won't match `analysis`
+- **Leetspeak-normalised** — `0→o`, `1→i`, `3→e`, `4→a`, `5→s`, `@→a`, `$→s`
+- **Whitespace-flexible** for multi-word terms — `sexual assault` matches regardless of spacing
+
+Pass `blocklist: ['extra-term']` to extend with domain-specific terms at call time. Terms are normalized and matched with the same rules.
+
+**ML model:** The text model slot currently uses a no-op stub (always returns `0.0`). The blocklist is the active detection layer. A real TFLite/CoreML text classifier can be plugged in later without any API changes.
 
 ## Error handling
 
