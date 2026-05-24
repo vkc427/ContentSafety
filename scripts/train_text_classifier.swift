@@ -67,9 +67,10 @@ if mode == "fixture" {
         }
     }
 
-    guard let textCol = rawTable["comment_text"] else {
+    guard rawTable.columnNames.contains("comment_text") else {
         print("Error: 'comment_text' column not found in CSV"); exit(1)
     }
+    let textCol = rawTable["comment_text"]
     var textArray: [String] = []
     var alignedLabels: [String] = []
     for i in 0..<n {
