@@ -1,9 +1,16 @@
 {
   "name": "expo-content-safety",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "On-device NSFW detection for images, videos, and text",
   "main": "build/index.js",
   "types": "build/index.d.ts",
+  "files": [
+    "build/",
+    "android/",
+    "ios/",
+    "expo-module.config.json",
+    "ExpoContentSafety.podspec"
+  ],
   "scripts": {
     "build": "node internal/module_scripts/build.js",
     "clean": "node internal/module_scripts/clean.js",
@@ -17,15 +24,21 @@
     "react-native",
     "expo",
     "expo-content-safety",
+    "nsfw",
+    "content-moderation",
+    "on-device",
     "ExpoContentSafety"
   ],
-  "repository": "",
-  "bugs": {
-    "url": "/issues"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kvadlamudi/expo-content-safety.git"
   },
-  "author": "kvadlamudi <iosvkctps@gmail.com> ()",
+  "bugs": {
+    "url": "https://github.com/kvadlamudi/expo-content-safety/issues"
+  },
+  "author": "kvadlamudi <iosvkctps@gmail.com>",
   "license": "MIT",
-  "homepage": "#readme",
+  "homepage": "https://github.com/kvadlamudi/expo-content-safety#readme",
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@types/jest": "^29.2.1",
