@@ -8,6 +8,7 @@ public class ContentSafetyModule: Module {
     private lazy var videoAnalyzer = VideoAnalyzer()
 
     private var textAnalyzer = TextAnalyzer()
+    private let analyzerQueue = DispatchQueue(label: "expo.content-safety.text-analyzer")
 
     public func definition() -> ModuleDefinition {
         Name("ContentSafety")
@@ -51,7 +52,8 @@ public class ContentSafetyModule: Module {
             guard let self else {
                 throw TextAnalyzerError.inferenceFailed("Module deallocated")
             }
-            return try self.textAnalyzer.analyze(
+            let analyzer = self.analyzerQueue.sync { self.textAnalyzer }
+            return try analyzer.analyze(
                 input:        input,
                 threshold:    threshold,
                 useBlocklist: useBlocklist,
@@ -65,14 +67,15 @@ public class ContentSafetyModule: Module {
             if let modelPath = options?["modelPath"] as? String {
                 let url: URL
                 if modelPath.hasPrefix("file://") {
-                    url = URL(string: modelPath) ?? URL(fileURLWithPath: modelPath)
+                    let stripped = String(modelPath.dropFirst("file://".count))
+                    url = URL(string: modelPath) ?? URL(fileURLWithPath: stripped)
                 } else {
                     url = URL(fileURLWithPath: modelPath)
                 }
                 let backend = CoreMLTextModelAnalyzing.load(from: url)
-                self.textAnalyzer = TextAnalyzer(modelBackend: backend)
+                self.analyzerQueue.sync { self.textAnalyzer = TextAnalyzer(modelBackend: backend) }
             }
-            _ = self.textAnalyzer
+            _ = self.analyzerQueue.sync { self.textAnalyzer }
             guard #available(iOS 17, *) else { return }
             _ = self.imageAnalyzer
             _ = self.videoAnalyzer
