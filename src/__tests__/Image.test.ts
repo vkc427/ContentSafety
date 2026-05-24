@@ -65,4 +65,52 @@ describe('Image.detect', () => {
       durationMs: 12,
     });
   });
+
+  describe('native error remapping', () => {
+    it('remaps INFERENCE_FAILED prefix to ContentSafetyError', async () => {
+      mockedNative.detectImage.mockRejectedValue(
+        new Error('INFERENCE_FAILED: model returned unexpected output')
+      );
+      await expect(Image.detect('file:///tmp/x.jpg')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'INFERENCE_FAILED',
+        message: 'model returned unexpected output',
+      });
+    });
+
+    it('remaps IOS_VERSION_TOO_LOW prefix to ContentSafetyError', async () => {
+      mockedNative.detectImage.mockRejectedValue(
+        new Error('IOS_VERSION_TOO_LOW: iOS 17.0+ is required for image analysis')
+      );
+      await expect(Image.detect('file:///tmp/x.jpg')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'IOS_VERSION_TOO_LOW',
+      });
+    });
+
+    it('remaps INVALID_INPUT prefix from native layer to ContentSafetyError', async () => {
+      mockedNative.detectImage.mockRejectedValue(
+        new Error('INVALID_INPUT: uri must be a file:// URL, got: https://example.com')
+      );
+      await expect(Image.detect('file:///tmp/x.jpg')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'INVALID_INPUT',
+      });
+    });
+
+    it('wraps unrecognised native errors as INFERENCE_FAILED', async () => {
+      mockedNative.detectImage.mockRejectedValue(new Error('something unexpected'));
+      await expect(Image.detect('file:///tmp/x.jpg')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'INFERENCE_FAILED',
+        message: 'something unexpected',
+      });
+    });
+
+    it('passes through an existing ContentSafetyError unchanged', async () => {
+      const original = new ContentSafetyError('MODEL_LOAD_FAILED', 'disk full');
+      mockedNative.detectImage.mockRejectedValue(original);
+      await expect(Image.detect('file:///tmp/x.jpg')).rejects.toBe(original);
+    });
+  });
 });
