@@ -50,8 +50,9 @@ public class ContentSafetyModule: Module {
         }
 
         AsyncFunction("warmup") { [weak self] () async -> Void in
-            guard #available(iOS 17, *) else { return }
             guard let self else { return }
+            _ = self.textAnalyzer
+            guard #available(iOS 17, *) else { return }
             _ = self.imageAnalyzer
         }
     }
