@@ -27,13 +27,15 @@ interface ImageInferenceBackend {
 
 class TFLiteInferenceBackend(context: Context) : ImageInferenceBackend {
     private val interpreter: Interpreter
+    private var gpuDelegate: GpuDelegate? = null
 
     init {
         val model = loadModelBuffer(context)
         val options = Interpreter.Options()
         try {
-            val gpuDelegate = GpuDelegate()
-            options.addDelegate(gpuDelegate)
+            val delegate = GpuDelegate()
+            options.addDelegate(delegate)
+            gpuDelegate = delegate
         } catch (e: Exception) {
             Log.w(TAG, "GPU delegate unavailable, using CPU: ${e.message}")
         }
@@ -42,8 +44,8 @@ class TFLiteInferenceBackend(context: Context) : ImageInferenceBackend {
 
     private fun loadModelBuffer(context: Context): MappedByteBuffer {
         val fd = context.assets.openFd(MODEL_FILE)
-        return FileInputStream(fd.fileDescriptor).channel
-            .map(FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.declaredLength)
+        val stream = FileInputStream(fd.fileDescriptor)
+        return stream.use { it.channel.map(FileChannel.MapMode.READ_ONLY, fd.startOffset, fd.declaredLength) }
     }
 
     override fun runInference(input: ByteBuffer): FloatArray {
@@ -54,6 +56,8 @@ class TFLiteInferenceBackend(context: Context) : ImageInferenceBackend {
 
     override fun close() {
         interpreter.close()
+        gpuDelegate?.close()
+        gpuDelegate = null
     }
 }
 
@@ -63,22 +67,22 @@ class ImageAnalyzer(
 ) {
     @Volatile private var backend: ImageInferenceBackend? = null
 
-    fun loadModel() {
-        if (backend == null) {
-            synchronized(this) {
-                if (backend == null) {
-                    backend = try {
-                        backendFactory(context)
-                    } catch (e: Exception) {
-                        throw RuntimeException("MODEL_LOAD_FAILED: ${e.message}", e)
-                    }
-                }
+    fun loadModel(): ImageInferenceBackend {
+        backend?.let { return it }
+        synchronized(this) {
+            backend?.let { return it }
+            val b = try {
+                backendFactory(context)
+            } catch (e: Exception) {
+                throw RuntimeException("MODEL_LOAD_FAILED: ${e.message}", e)
             }
+            backend = b
+            return b
         }
     }
 
     fun analyze(uri: String, threshold: Double): Map<String, Any> {
-        loadModel()
+        val b = loadModel()
 
         if (uri.isEmpty()) throw IllegalArgumentException("INVALID_INPUT: uri must be a non-empty string")
         val parsed = try { Uri.parse(uri) } catch (e: Exception) {
@@ -91,7 +95,7 @@ class ImageAnalyzer(
             ?: throw IllegalArgumentException("INVALID_INPUT: file not found or unreadable: $path")
 
         return try {
-            runAnalysis(bitmap, threshold)
+            runAnalysis(bitmap, threshold, b)
         } catch (e: IllegalArgumentException) {
             throw e
         } catch (e: Exception) {
@@ -127,13 +131,16 @@ class ImageAnalyzer(
         return inSampleSize
     }
 
-    private fun runAnalysis(bitmap: Bitmap, threshold: Double): Map<String, Any> {
+    private fun runAnalysis(bitmap: Bitmap, threshold: Double, b: ImageInferenceBackend): Map<String, Any> {
         val scaled = Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, true)
-        val input = bitmapToByteBuffer(scaled)
-        if (scaled != bitmap) scaled.recycle()
+        val input = try {
+            bitmapToByteBuffer(scaled)
+        } finally {
+            if (scaled != bitmap) scaled.recycle()
+        }
 
         val start = SystemClock.elapsedRealtime()
-        val scores = backend!!.runInference(input)
+        val scores = b.runInference(input)
         val durationMs = (SystemClock.elapsedRealtime() - start).toInt()
 
         val drawings = scores[0].toDouble()
