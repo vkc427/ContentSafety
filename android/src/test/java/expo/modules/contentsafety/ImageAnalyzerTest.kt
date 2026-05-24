@@ -111,6 +111,7 @@ class ImageAnalyzerTest {
         assertTrue(categories.containsKey("porn"))
         assertTrue(categories.containsKey("sexy"))
 
+        @Suppress("UNCHECKED_CAST")
         val durationMs = result["durationMs"] as Int
         assertTrue("durationMs should be >= 0", durationMs >= 0)
     }
