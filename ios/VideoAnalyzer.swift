@@ -3,6 +3,7 @@ import SensitiveContentAnalysis
 
 // MARK: - Protocol for dependency injection / testability
 
+@available(iOS 17.0, *)
 protocol VideoSensitivityAnalyzing {
     func isSensitive(url: URL) async throws -> Bool
 }
@@ -15,7 +16,8 @@ final class SCAVideoAnalyzing: VideoSensitivityAnalyzing {
 
     func isSensitive(url: URL) async throws -> Bool {
         do {
-            let result = try await analyzer.analyzeVideo(at: url)
+            let handler = analyzer.videoAnalysis(forFileAt: url)
+            let result = try await handler.hasSensitiveContent()
             return result.isSensitive
         } catch {
             throw VideoAnalyzerError.inferenceFailed(error.localizedDescription)
@@ -65,6 +67,7 @@ final class VideoAnalyzer {
 
         let sensitive: Bool
         do {
+            // sampleRate / maxFrames / stopOnFirstHit are informational on iOS — SCA handles frame sampling internally
             sensitive = try await underlying.isSensitive(url: url)
         } catch let err as VideoAnalyzerError {
             throw err
