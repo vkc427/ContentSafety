@@ -1,5 +1,6 @@
 import { Video } from '../index';
 import ContentSafetyModule from '../ContentSafetyModule';
+import { ContentSafetyError } from '../types';
 
 const mockedNative = ContentSafetyModule as unknown as {
   detectVideo: jest.Mock;
@@ -64,6 +65,44 @@ describe('Video.detect', () => {
   it('rejects empty uris', async () => {
     await expect(Video.detect('')).rejects.toMatchObject({
       code: 'INVALID_INPUT',
+    });
+  });
+
+  describe('native error remapping', () => {
+    it('remaps INFERENCE_FAILED prefix to ContentSafetyError', async () => {
+      mockedNative.detectVideo.mockRejectedValue(
+        new Error('INFERENCE_FAILED: frame decode error')
+      );
+      await expect(Video.detect('file:///tmp/clip.mp4')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'INFERENCE_FAILED',
+        message: 'frame decode error',
+      });
+    });
+
+    it('remaps IOS_VERSION_TOO_LOW prefix to ContentSafetyError', async () => {
+      mockedNative.detectVideo.mockRejectedValue(
+        new Error('IOS_VERSION_TOO_LOW: iOS 17.0+ is required for image analysis')
+      );
+      await expect(Video.detect('file:///tmp/clip.mp4')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'IOS_VERSION_TOO_LOW',
+      });
+    });
+
+    it('wraps unrecognised native errors as INFERENCE_FAILED', async () => {
+      mockedNative.detectVideo.mockRejectedValue(new Error('something unexpected'));
+      await expect(Video.detect('file:///tmp/clip.mp4')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'INFERENCE_FAILED',
+        message: 'something unexpected',
+      });
+    });
+
+    it('passes through an existing ContentSafetyError unchanged', async () => {
+      const original = new ContentSafetyError('MODEL_LOAD_FAILED', 'disk full');
+      mockedNative.detectVideo.mockRejectedValue(original);
+      await expect(Video.detect('file:///tmp/clip.mp4')).rejects.toBe(original);
     });
   });
 });

@@ -1,5 +1,6 @@
 import { Text } from '../index';
 import ContentSafetyModule from '../ContentSafetyModule';
+import { ContentSafetyError } from '../types';
 
 const mockedNative = ContentSafetyModule as unknown as {
   detectText: jest.Mock;
@@ -65,5 +66,43 @@ describe('Text.detect', () => {
       // @ts-expect-error testing runtime validation
       Text.detect('hello', { blocklist: [123] }),
     ).rejects.toMatchObject({ code: 'INVALID_INPUT' });
+  });
+
+  describe('native error remapping', () => {
+    it('remaps INFERENCE_FAILED prefix to ContentSafetyError', async () => {
+      mockedNative.detectText.mockRejectedValue(
+        new Error('INFERENCE_FAILED: model output malformed')
+      );
+      await expect(Text.detect('hello')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'INFERENCE_FAILED',
+        message: 'model output malformed',
+      });
+    });
+
+    it('remaps IOS_VERSION_TOO_LOW prefix to ContentSafetyError', async () => {
+      mockedNative.detectText.mockRejectedValue(
+        new Error('IOS_VERSION_TOO_LOW: iOS 17.0+ is required for image analysis')
+      );
+      await expect(Text.detect('hello')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'IOS_VERSION_TOO_LOW',
+      });
+    });
+
+    it('wraps unrecognised native errors as INFERENCE_FAILED', async () => {
+      mockedNative.detectText.mockRejectedValue(new Error('something unexpected'));
+      await expect(Text.detect('hello')).rejects.toMatchObject({
+        name: 'ContentSafetyError',
+        code: 'INFERENCE_FAILED',
+        message: 'something unexpected',
+      });
+    });
+
+    it('passes through an existing ContentSafetyError unchanged', async () => {
+      const original = new ContentSafetyError('MODEL_LOAD_FAILED', 'disk full');
+      mockedNative.detectText.mockRejectedValue(original);
+      await expect(Text.detect('hello')).rejects.toBe(original);
+    });
   });
 });

@@ -1,4 +1,5 @@
 import ContentSafetyModule from './ContentSafetyModule';
+import { remapNativeError } from './remapNativeError';
 import {
   ContentSafetyError,
   DEFAULT_THRESHOLD,
@@ -49,5 +50,9 @@ export async function detect(
 ): Promise<DetectionResult> {
   validateUri(uri);
   const resolved = resolveOptions(options);
-  return ContentSafetyModule.detectVideo(uri, resolved);
+  try {
+    return await ContentSafetyModule.detectVideo(uri, resolved);
+  } catch (err) {
+    throw remapNativeError(err);
+  }
 }

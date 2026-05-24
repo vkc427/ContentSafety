@@ -1,4 +1,5 @@
 import ContentSafetyModule from './ContentSafetyModule';
+import { remapNativeError } from './remapNativeError';
 import {
   ContentSafetyError,
   DEFAULT_THRESHOLD,
@@ -41,5 +42,9 @@ export async function detect(
 ): Promise<DetectionResult> {
   validateInput(input);
   const resolved = resolveOptions(options);
-  return ContentSafetyModule.detectText(input, resolved);
+  try {
+    return await ContentSafetyModule.detectText(input, resolved);
+  } catch (err) {
+    throw remapNativeError(err);
+  }
 }
