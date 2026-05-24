@@ -8,17 +8,22 @@ class ContentSafetyModule : Module() {
     private val context: Context
         get() = appContext.reactContext ?: throw IllegalStateException("React context unavailable")
 
-    private val imageAnalyzer: ImageAnalyzer by lazy { ImageAnalyzer(context) }
+    @Volatile private var imageAnalyzer: ImageAnalyzer? = null
+
+    private fun getOrCreateAnalyzer(): ImageAnalyzer =
+        imageAnalyzer ?: synchronized(this) {
+            imageAnalyzer ?: ImageAnalyzer(context).also { imageAnalyzer = it }
+        }
 
     override fun definition() = ModuleDefinition {
         Name("ContentSafety")
 
         AsyncFunction("detectImage") { uri: String, options: Map<String, Any?> ->
             val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
-            imageAnalyzer.analyze(uri, threshold)
+            getOrCreateAnalyzer().analyze(uri, threshold)
         }
 
-        AsyncFunction("detectVideo") { uri: String, options: Map<String, Any?> ->
+        AsyncFunction("detectVideo") { _: String, options: Map<String, Any?> ->
             val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
             mapOf(
                 "isNSFW" to false,
@@ -30,7 +35,7 @@ class ContentSafetyModule : Module() {
             )
         }
 
-        AsyncFunction("detectText") { input: String, options: Map<String, Any?> ->
+        AsyncFunction("detectText") { _: String, options: Map<String, Any?> ->
             val threshold = (options["threshold"] as? Number)?.toDouble() ?: 0.7
             mapOf(
                 "isNSFW" to false,
@@ -42,11 +47,12 @@ class ContentSafetyModule : Module() {
         }
 
         AsyncFunction("warmup") {
-            imageAnalyzer.loadModel()
+            getOrCreateAnalyzer().loadModel()
         }
 
         OnDestroy {
-            imageAnalyzer.close()
+            imageAnalyzer?.close()
+            imageAnalyzer = null
         }
     }
 }
