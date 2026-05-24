@@ -215,4 +215,33 @@ class ImageAnalyzerTest {
             ex.message!!.startsWith("INFERENCE_FAILED:")
         )
     }
+
+    // -------------------------------------------------------------------------
+    // 9. analyzeBitmap returns correct result shape
+    // -------------------------------------------------------------------------
+    @Test
+    fun `analyzeBitmap returns correct result shape`() {
+        `when`(mockBackend.runInference(any())).thenReturn(
+            floatArrayOf(0.8f, 0.05f, 0.9f, 0.02f, 0.03f)
+        )
+        val analyzer = makeAnalyzer()
+        val result = analyzer.analyzeBitmap(mockBitmap, 0.7)
+
+        assertEquals(false, result["isNSFW"])
+        assertEquals(0.05, result["confidence"] as Double, 1e-6)
+        assertEquals("tflite-image", result["source"])
+    }
+
+    // -------------------------------------------------------------------------
+    // 10. analyzeBitmap inference failure → INFERENCE_FAILED
+    // -------------------------------------------------------------------------
+    @Test
+    fun `analyzeBitmap inference failure throws INFERENCE_FAILED`() {
+        `when`(mockBackend.runInference(any())).thenThrow(RuntimeException("crash"))
+        val analyzer = makeAnalyzer()
+        val ex = assertThrows(RuntimeException::class.java) {
+            analyzer.analyzeBitmap(mockBitmap, 0.7)
+        }
+        assertTrue(ex.message!!.startsWith("INFERENCE_FAILED:"))
+    }
 }

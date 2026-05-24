@@ -127,6 +127,16 @@ class ImageAnalyzer(
         }
     }
 
+    fun analyzeBitmap(bitmap: Bitmap, threshold: Double): Map<String, Any> {
+        val b = loadModel()
+        return try {
+            runAnalysis(bitmap, threshold, b)
+        } catch (e: Exception) {
+            throw RuntimeException("INFERENCE_FAILED: ${e.message}", e)
+        }
+        // NOTE: does NOT recycle bitmap — caller owns lifecycle
+    }
+
     private fun runAnalysis(bitmap: Bitmap, threshold: Double, b: ImageInferenceBackend): Map<String, Any> {
         val scaled = Bitmap.createScaledBitmap(bitmap, INPUT_SIZE, INPUT_SIZE, true) ?: bitmap
         val input = try {
