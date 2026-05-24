@@ -7,7 +7,7 @@ On-device NSFW detection for **images**, **videos**, and **text** in React Nativ
 | Capability | iOS                      | Android                    |
 |------------|--------------------------|----------------------------|
 | Image      | ✅ SCSensitivityAnalyzer | ✅ TFLite MobileNetV2      |
-| Video      | stub                     | stub                       |
+| Video      | ✅ SCSensitivityAnalyzer | ✅ TFLite MobileNetV2      |
 | Text       | ✅ Blocklist (model stub) | ✅ Blocklist (model stub)  |
 
 ## Requirements
@@ -38,6 +38,37 @@ if (imageResult.isNSFW) showWarning(imageResult);
 const videoResult = await Video.detect(videoUri, { sampleRate: 2 });
 const textResult = await Text.detect(message, { blocklist: ['extra-term'] });
 ```
+
+## Video detection
+
+`Video.detect` extracts frames from a local video file and checks them for NSFW content.
+
+- **iOS** — delegates to `SCSensitivityAnalyzer.videoAnalysis(forFileAt:)`. Apple handles frame sampling internally; `sampleRate`, `maxFrames`, and `stopOnFirstHit` are accepted for API consistency but are informational on iOS.
+- **Android** — extracts frames via `MediaMetadataRetriever` at `sampleRate` fps, capped at `maxFrames`, and runs each through the TFLite MobileNetV2 image classifier. `stopOnFirstHit: true` (the default) short-circuits as soon as one frame exceeds the threshold.
+
+```ts
+import { Video } from 'expo-content-safety';
+
+const result = await Video.detect(videoUri, {
+  threshold: 0.7,       // default
+  sampleRate: 1,        // frames per second to sample (Android)
+  maxFrames: 30,        // hard cap on frames analyzed (Android)
+  stopOnFirstHit: true, // stop on first NSFW frame (Android)
+});
+// result.isNSFW
+// result.confidence
+// result.framesAnalyzed  — always 0 on iOS (SCA handles sampling internally)
+// result.durationMs
+```
+
+### VideoDetectOptions
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `threshold` | `number` | `0.7` | Score at or above which `isNSFW` is `true` |
+| `sampleRate` | `number` | `1` | Frames per second to sample (Android only) |
+| `maxFrames` | `number` | `30` | Hard cap on frames analyzed (Android only) |
+| `stopOnFirstHit` | `boolean` | `true` | Stop analyzing after first NSFW frame (Android only) |
 
 ## Text detection
 
