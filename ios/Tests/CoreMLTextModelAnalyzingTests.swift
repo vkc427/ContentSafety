@@ -36,17 +36,21 @@ final class CoreMLTextModelAnalyzingTests: XCTestCase {
         XCTAssertLessThanOrEqual(score, 1.0)
     }
 
-    func test_confidence_emptyString_returnsZero() {
-        guard let backend = makeFixtureBackend() else { return }
+    func test_confidence_emptyString_returnsZero() throws {
+        guard let backend = makeFixtureBackend() else {
+            throw XCTSkip("Fixture model not found — run: xcrun --sdk macosx swift -framework CreateML scripts/train_text_classifier.swift fixture && xcrun coremlcompiler compile TestContentSafetyTextClassifier.mlmodel ios/Tests/Resources/")
+        }
         // NLModel returns an empty dict for empty input; subscript ["unsafe"] → nil → 0.0
         let score = backend.confidence(for: "")
         XCTAssertEqual(score, 0.0)
     }
 
-    func test_confidence_missingUnsafeLabel_returnsZero() {
-        // If model returns hypotheses without "unsafe" key, default is 0.0
-        guard let backend = makeFixtureBackend() else { return }
+    func test_confidence_benignText_returnsInRange() throws {
+        guard let backend = makeFixtureBackend() else {
+            throw XCTSkip("Fixture model not found — run: xcrun --sdk macosx swift -framework CreateML scripts/train_text_classifier.swift fixture && xcrun coremlcompiler compile TestContentSafetyTextClassifier.mlmodel ios/Tests/Resources/")
+        }
         let score = backend.confidence(for: "the quick brown fox")
         XCTAssertGreaterThanOrEqual(score, 0.0)
+        XCTAssertLessThanOrEqual(score, 1.0)
     }
 }
