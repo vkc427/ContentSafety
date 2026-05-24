@@ -1,16 +1,16 @@
-#!/usr/bin/env swift -framework CreateML
+// Run from repo root:
+//   xcrun --sdk macosx swift -framework CreateML scripts/train_text_classifier.swift fixture
+//   xcrun --sdk macosx swift -framework CreateML scripts/train_text_classifier.swift production /path/to/jigsaw_train.csv
+//
+// Compile the output model:
+//   xcrun coremlcompiler compile <output>.mlmodel <dest-dir>/
+//
+// Dataset for production mode:
+//   https://www.kaggle.com/competitions/jigsaw-toxic-comment-classification-challenge/data
 import CreateML
 import Foundation
 
-// Usage:
-//   swift scripts/train_text_classifier.swift fixture   → TestContentSafetyTextClassifier.mlmodel
-//   swift scripts/train_text_classifier.swift production /path/to/jigsaw_train.csv
-//                                                       → ContentSafetyTextClassifier.mlmodel
-//
-// Compile to .mlmodelc after training:
-//   xcrun coremlcompiler compile <output>.mlmodel <dest-dir>/
-
-let mode = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "fixture"
+let mode = CommandLine.arguments.count > 1 ? CommandLine.arguments[1] : "help"
 
 if mode == "fixture" {
     let texts: [String] = [
@@ -67,13 +67,22 @@ if mode == "fixture" {
         }
     }
 
-    let textCol = rawTable["comment_text"]
-    let textArray = (0..<n).compactMap { i -> String? in
-        if case .string(let s) = textCol[i] { return s }
-        return nil
+    guard let textCol = rawTable["comment_text"] else {
+        print("Error: 'comment_text' column not found in CSV"); exit(1)
+    }
+    var textArray: [String] = []
+    var alignedLabels: [String] = []
+    for i in 0..<n {
+        if case .string(let s) = textCol[i] {
+            textArray.append(s)
+            alignedLabels.append(labelArray[i])
+        }
+    }
+    guard !textArray.isEmpty else {
+        print("Error: no valid rows extracted from CSV"); exit(1)
     }
 
-    let trainTable = try MLDataTable(dictionary: ["text": textArray, "label": labelArray])
+    let trainTable = try MLDataTable(dictionary: ["text": textArray, "label": alignedLabels])
     let classifier = try MLTextClassifier(
         trainingData: trainTable,
         textColumn:   "text",
@@ -85,6 +94,7 @@ if mode == "fixture" {
     print("Next: xcrun coremlcompiler compile ContentSafetyTextClassifier.mlmodel ios/Resources/")
 
 } else {
-    print("Unknown mode '\(mode)'. Use 'fixture' or 'production'.")
+    print("Usage: xcrun --sdk macosx swift -framework CreateML scripts/train_text_classifier.swift <mode>")
+    print("Modes: fixture, production /path/to/jigsaw_train.csv")
     exit(1)
 }
