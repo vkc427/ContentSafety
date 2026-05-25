@@ -43,7 +43,7 @@
       "unsafe",
       "safe"
     ],
-    "generatedClassName" : "TestContentSafetyTextClassifier",
+    "generatedClassName" : "ContentSafetyTextClassifier",
     "userDefinedMetadata" : {
 
     },
