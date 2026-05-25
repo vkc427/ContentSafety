@@ -1,7 +1,7 @@
 export type DetectionSource =
   | 'apple-sca'
   | 'tflite-image'
-  | 'tflite-text'
+  | 'coreml-text'
   | 'blocklist';
 
 export interface DetectionCategories {

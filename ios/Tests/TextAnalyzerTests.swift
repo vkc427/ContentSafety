@@ -115,7 +115,7 @@ final class TextAnalyzerTests: XCTestCase {
 
     // MARK: 7. Model wins over blocklist
 
-    func test_modelWins_sourceIsTfliteText() throws {
+    func test_modelWins_sourceIsCoremlText() throws {
         mock.stubbedConfidence = 0.9          // blocklist returns 0.0 (no extraTerms match)
         let result = try analyzer.analyze(
             input: "hello world",
@@ -124,7 +124,7 @@ final class TextAnalyzerTests: XCTestCase {
             useModel: true,
             extraTerms: []
         )
-        XCTAssertEqual(result["source"] as? String,     "tflite-text")
+        XCTAssertEqual(result["source"] as? String,     "coreml-text")
         XCTAssertEqual(result["confidence"] as? Double,  0.9)
         XCTAssertEqual(result["isNSFW"] as? Bool,        true)
     }

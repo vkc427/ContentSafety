@@ -7,7 +7,7 @@ public class ContentSafetyModule: Module {
     @available(iOS 17.0, *)
     private lazy var videoAnalyzer = VideoAnalyzer()
 
-    private var textAnalyzer = TextAnalyzer()
+    private lazy var textAnalyzer = TextAnalyzer()
     private let analyzerQueue = DispatchQueue(label: "expo.content-safety.text-analyzer")
 
     public func definition() -> ModuleDefinition {

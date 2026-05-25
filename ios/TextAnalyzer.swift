@@ -63,7 +63,7 @@ final class TextAnalyzer {
         let confidence = max(blocklistScore, modelScore)
         let source: String
         if modelScore > blocklistScore && useModel {
-            source = "tflite-text"
+            source = "coreml-text"
         } else {
             source = "blocklist"
         }
