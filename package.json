@@ -1,6 +1,6 @@
 {
   "name": "expo-content-safety",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "On-device NSFW detection for images, videos, and text",
   "main": "build/index.js",
   "types": "build/index.d.ts",
