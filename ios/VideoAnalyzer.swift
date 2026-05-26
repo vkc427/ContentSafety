@@ -12,10 +12,17 @@ protocol VideoSensitivityAnalyzing {
 
 @available(iOS 17.0, *)
 final class SCAVideoAnalyzing: VideoSensitivityAnalyzing {
-    private let analyzer = SCSensitivityAnalyzer()
+    // nil when SCSensitivityAnalyzer() init throws NSException (missing entitlement)
+    private let analyzer: SCSensitivityAnalyzer?
+
+    init() {
+        var temp: SCSensitivityAnalyzer?
+        _ = SCABridge.tryCatch { temp = SCSensitivityAnalyzer() }
+        self.analyzer = temp
+    }
 
     func isSensitive(url: URL) async throws -> Bool {
-        guard scaEntitlementPresent() else { return false }
+        guard let analyzer else { return false }
         do {
             let handler = analyzer.videoAnalysis(forFileAt: url)
             let result = try await handler.hasSensitiveContent()

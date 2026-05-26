@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.4] - 2026-05-26
+
+### Fixed
+
+- **iOS crash without SCA entitlement (correct fix)** — replaced macOS-only `SecTask` entitlement check with an Objective-C `@try/@catch` bridge (`SCABridge`) that catches the `NSException` thrown by `SCSensitivityAnalyzer()` init; analyzer falls back to `nil` and returns `isNSFW: false` safely
+- **Removed `Security.framework`** from podspec (no longer needed)
+
 ## [1.0.3] - 2026-05-26
 
 ### Fixed
