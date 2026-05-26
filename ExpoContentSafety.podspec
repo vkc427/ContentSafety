@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name           = 'ExpoContentSafety'
-  s.version        = '1.0.1'
+  s.version        = '1.0.2'
   s.summary        = 'On-device NSFW detection for images, videos, and text'
   s.description    = 'Detects NSFW content entirely on-device. No content leaves the device.'
   s.author         = 'kvadlamudi'
