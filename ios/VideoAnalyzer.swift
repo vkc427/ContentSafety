@@ -15,6 +15,7 @@ final class SCAVideoAnalyzing: VideoSensitivityAnalyzing {
     private let analyzer = SCSensitivityAnalyzer()
 
     func isSensitive(url: URL) async throws -> Bool {
+        guard analyzer.analysisPolicy != .disabled else { return false }
         do {
             let handler = analyzer.videoAnalysis(forFileAt: url)
             let result = try await handler.hasSensitiveContent()
