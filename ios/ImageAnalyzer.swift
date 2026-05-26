@@ -14,6 +14,7 @@ final class SCAImageAnalyzing: ImageSensitivityAnalyzing {
     private let analyzer = SCSensitivityAnalyzer()
 
     func isSensitive(url: URL) async throws -> Bool {
+        guard analyzer.analysisPolicy != .disabled else { return false }
         do {
             let result = try await analyzer.analyzeImage(at: url)
             return result.isSensitive
