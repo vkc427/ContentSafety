@@ -1,5 +1,13 @@
 import Foundation
+import Security
 import SensitiveContentAnalysis
+
+func scaEntitlementPresent() -> Bool {
+    guard let task = SecTaskCreateFromSelf(nil) else { return false }
+    let value = SecTaskCopyValueForEntitlement(
+        task, "com.apple.developer.sensitivecontentanalysis.client" as CFString, nil)
+    return value != nil
+}
 
 // MARK: - Protocol for dependency injection / testability
 
@@ -14,6 +22,7 @@ final class SCAImageAnalyzing: ImageSensitivityAnalyzing {
     private let analyzer = SCSensitivityAnalyzer()
 
     func isSensitive(url: URL) async throws -> Bool {
+        guard scaEntitlementPresent() else { return false }
         do {
             let result = try await analyzer.analyzeImage(at: url)
             return result.isSensitive

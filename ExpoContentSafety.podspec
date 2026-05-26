@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
 
   s.dependency 'ExpoModulesCore'
 
-  s.frameworks = 'SensitiveContentAnalysis', 'NaturalLanguage', 'CoreML'
+  s.frameworks = 'SensitiveContentAnalysis', 'NaturalLanguage', 'CoreML', 'Security'
   s.resources  = 'ios/Resources/**'
 
   s.pod_target_xcconfig = {
