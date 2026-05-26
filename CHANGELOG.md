@@ -2,11 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.0.2] - 2026-05-26
+## [1.0.3] - 2026-05-26
 
 ### Fixed
 
 - **iOS crash without SCA entitlement** — `detectImage`, `detectVideo`, and `warmup` now check for `com.apple.developer.sensitivecontentanalysis.client` via the Security framework before ever initialising `SCSensitivityAnalyzer`; returns `isNSFW: false` safely when the entitlement is absent
+- **Podspec now links `Security.framework`** — required for the `SecTask` entitlement-check APIs added in this release
 
 ## [1.0.1] - 2026-05-25
 
