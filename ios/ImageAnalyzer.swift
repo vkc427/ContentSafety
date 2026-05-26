@@ -1,13 +1,5 @@
 import Foundation
-import Security
 import SensitiveContentAnalysis
-
-func scaEntitlementPresent() -> Bool {
-    guard let task = SecTaskCreateFromSelf(nil) else { return false }
-    let value = SecTaskCopyValueForEntitlement(
-        task, "com.apple.developer.sensitivecontentanalysis.client" as CFString, nil)
-    return value != nil
-}
 
 // MARK: - Protocol for dependency injection / testability
 
@@ -19,10 +11,17 @@ protocol ImageSensitivityAnalyzing {
 
 @available(iOS 17.0, *)
 final class SCAImageAnalyzing: ImageSensitivityAnalyzing {
-    private let analyzer = SCSensitivityAnalyzer()
+    // nil when SCSensitivityAnalyzer() init throws NSException (missing entitlement)
+    private let analyzer: SCSensitivityAnalyzer?
+
+    init() {
+        var temp: SCSensitivityAnalyzer?
+        _ = SCABridge.tryCatch { temp = SCSensitivityAnalyzer() }
+        self.analyzer = temp
+    }
 
     func isSensitive(url: URL) async throws -> Bool {
-        guard scaEntitlementPresent() else { return false }
+        guard let analyzer else { return false }
         do {
             let result = try await analyzer.analyzeImage(at: url)
             return result.isSensitive
@@ -42,9 +41,9 @@ enum ImageAnalyzerError: Error, LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .invalidInput(let msg):   return "INVALID_INPUT: \(msg)"
+        case .invalidInput(let msg):    return "INVALID_INPUT: \(msg)"
         case .inferenceFailed(let msg): return "INFERENCE_FAILED: \(msg)"
-        case .iosVersionTooLow:        return "IOS_VERSION_TOO_LOW: iOS 17.0+ is required"
+        case .iosVersionTooLow:         return "IOS_VERSION_TOO_LOW: iOS 17.0+ is required"
         case .modelLoadFailed(let msg): return "MODEL_LOAD_FAILED: \(msg)"
         }
     }

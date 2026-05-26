@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name           = 'ExpoContentSafety'
-  s.version        = '1.0.3'
+  s.version        = '1.0.4'
   s.summary        = 'On-device NSFW detection for images, videos, and text'
   s.description    = 'Detects NSFW content entirely on-device. No content leaves the device.'
   s.author         = 'kvadlamudi'
@@ -13,7 +13,7 @@ Pod::Spec.new do |s|
 
   s.dependency 'ExpoModulesCore'
 
-  s.frameworks = 'SensitiveContentAnalysis', 'NaturalLanguage', 'CoreML', 'Security'
+  s.frameworks = 'SensitiveContentAnalysis', 'NaturalLanguage', 'CoreML'
   s.resources  = 'ios/Resources/**'
 
   s.pod_target_xcconfig = {
