@@ -17,10 +17,14 @@ public class ContentSafetyModule: Module {
             guard #available(iOS 17, *) else {
                 throw ImageAnalyzerError.iosVersionTooLow
             }
+            let threshold = options["threshold"] as? Double ?? 0.7
+            guard scaEntitlementPresent() else {
+                return ["isNSFW": false, "confidence": 0.0, "threshold": threshold,
+                        "source": "apple-sca", "durationMs": 0]
+            }
             guard let self else {
                 throw ImageAnalyzerError.inferenceFailed("Module deallocated")
             }
-            let threshold = options["threshold"] as? Double ?? 0.7
             return try await self.imageAnalyzer.analyze(uri: uri, threshold: threshold)
         }
 
@@ -28,13 +32,17 @@ public class ContentSafetyModule: Module {
             guard #available(iOS 17, *) else {
                 throw ImageAnalyzerError.iosVersionTooLow
             }
-            guard let self else {
-                throw VideoAnalyzerError.inferenceFailed("Module deallocated")
-            }
             let threshold      = options["threshold"]      as? Double ?? 0.7
             let sampleRate     = options["sampleRate"]     as? Double ?? 1.0
             let maxFrames      = options["maxFrames"]      as? Int    ?? 30
             let stopOnFirstHit = options["stopOnFirstHit"] as? Bool   ?? true
+            guard scaEntitlementPresent() else {
+                return ["isNSFW": false, "confidence": 0.0, "threshold": threshold,
+                        "source": "apple-sca", "durationMs": 0, "framesAnalyzed": 0]
+            }
+            guard let self else {
+                throw VideoAnalyzerError.inferenceFailed("Module deallocated")
+            }
             return try await self.videoAnalyzer.analyze(
                 uri:            uri,
                 threshold:      threshold,
@@ -76,7 +84,7 @@ public class ContentSafetyModule: Module {
                 self.analyzerQueue.sync { self.textAnalyzer = TextAnalyzer(modelBackend: backend) }
             }
             _ = self.analyzerQueue.sync { self.textAnalyzer }
-            guard #available(iOS 17, *) else { return }
+            guard #available(iOS 17, *), scaEntitlementPresent() else { return }
             _ = self.imageAnalyzer
             _ = self.videoAnalyzer
         }
